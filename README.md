@@ -1,3 +1,3 @@
 # gopx-common
 
-Provides common utility functions across other gopx modules
+Provides common utility functions across other gopx modules.
