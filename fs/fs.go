@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"gopx.io/gopx-common/arr"
+
 	"github.com/pkg/errors"
 )
 
@@ -228,6 +230,39 @@ func DecompressTarGZ(dst string, r io.Reader) (string, error) {
 					return "", errors.Wrapf(err, "Unable to create symlink for entry: %s", header.Name)
 				}
 			}
+		}
+	}
+}
+
+// ReadEntryTarGz reads the first existing entry among input slice from a .tar.gz file.
+func ReadEntryTarGz(r io.Reader, w io.Writer, entries []string) (ok bool, idx int, err error) {
+	gzr, err := gzip.NewReader(r)
+	if err != nil {
+		return
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+
+	for {
+		header, err := tr.Next()
+		if err != nil {
+			switch err {
+			case io.EOF:
+				return false, 0, nil
+			default:
+				return false, 0, err
+			}
+		}
+
+		idx := arr.FindStr(entries, header.Name)
+
+		if idx != -1 {
+			_, err := io.Copy(w, tr)
+			if err != nil {
+				return false, 0, err
+			}
+			return true, idx, nil
 		}
 	}
 }
